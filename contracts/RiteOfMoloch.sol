@@ -50,6 +50,18 @@ contract RiteOfMoloch is ERC721, AccessControl {
     // logs data when a user successfully claims back their stake
     event Claim(address newMember, uint256 claimAmount);
 
+    // log the new staking requirement
+    event ChangedStake(uint256 newStake);
+
+    // log the new minimum shares for DAO membership
+    event ChangedShare(uint256 newShare);
+
+    // log the new duration before an initiate can be slashed
+    event ChangedTime(uint256 newTime);
+
+    // log feedback data on chain for aggregation and graph
+    event Feedback(address user, address treasury, string feedback);
+
     // initiation participant token balances
     mapping(address => uint256) private _staked;
 
@@ -71,7 +83,7 @@ contract RiteOfMoloch is ERC721, AccessControl {
     address[] public allInitiates;
 
     // minimum amount of dao shares required to be considered a member
-    uint256 internal _minimumShare;
+    uint256 public minimumShare;
 
     // minimum amount of staked tokens required to join the initiation
     uint256 public minimumStake;
@@ -80,7 +92,7 @@ contract RiteOfMoloch is ERC721, AccessControl {
     uint256 public maximumTime;
 
     // DAO treasury address
-    address treasury;
+    address public treasury;
 
     constructor(address daoAddress, address tokenAddress, uint256 shareThreshold, uint256 minStake)
     ERC721("Rite of Moloch", "RITE") {
@@ -95,7 +107,7 @@ contract RiteOfMoloch is ERC721, AccessControl {
         _token = Token(tokenAddress);
 
         // Set the minimum shares
-        _minimumShare = shareThreshold;
+        minimumShare = shareThreshold;
 
         // grant roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -165,6 +177,19 @@ contract RiteOfMoloch is ERC721, AccessControl {
 
     }
 
+    /**
+    * @dev Allows initiates to log permanent feedback data on-chain
+    * @param feedback "Developers do something!"
+    * Doesn't change contract state; simply passes call-data through an event
+    */
+    function cryForHelp(string calldata feedback) public {
+
+        require(balanceOf(msg.sender) == 1, "Only cohort participants!");
+
+        emit Feedback(msg.sender, treasury, feedback);
+
+    }
+
     /*************************
      ACCESS CONTROL FUNCTIONS
      *************************/
@@ -181,6 +206,9 @@ contract RiteOfMoloch is ERC721, AccessControl {
         // set the minimum staking requirement
         minimumStake = newMinimumStake;
 
+        // emit new staking requirement data
+        emit ChangedStake(newMinimumStake);
+
     }
 
     /**
@@ -189,8 +217,14 @@ contract RiteOfMoloch is ERC721, AccessControl {
     */
     function setMaxDuration(uint256 newMaxTime) public onlyRole(OPERATOR) {
 
+        // enforce that the minimum time is greater than 1 week
+        require(newMaxTime > 0, "Minimum duration must be greater than 0!");
+
         // set the maximum length of time for initiations
         maximumTime = newMaxTime;
+
+        // log the new duration before stakes can be slashed
+        emit ChangedTime(newMaxTime);
 
     }
 
@@ -200,8 +234,16 @@ contract RiteOfMoloch is ERC721, AccessControl {
     */
     function setShareThreshold(uint256 newShareThreshold) public onlyRole(ADMIN) {
 
-        // set the minimum amount of shares required to be considered a member.
-        _minimumShare = newShareThreshold;
+
+        // enforce that the minimum share threshold isn't zero
+        require(newShareThreshold > 0, "Minimum shares must be greater than zero!");
+
+        // set the minimum number of DAO shares required to graduate
+        minimumShare = newShareThreshold;
+
+        // log data for the new minimum share threshold
+        emit ChangedShare(newShareThreshold);
+
 
     }
 
@@ -242,26 +284,30 @@ contract RiteOfMoloch is ERC721, AccessControl {
     */
     function _claim(uint256 _userIndex) internal virtual returns (bool) {
 
+        address msgSender = msg.sender;
         // enforce that the initiate has stake
-        require(_staked[msg.sender] > 0, "User has no stake!!");
+        require(_staked[msgSender] > 0, "User has no stake!!");
 
         // enforce that the function caller and index match
-        require(allInitiates[_userIndex] == msg.sender, "Can only claim your own stake!");
+        require(allInitiates[_userIndex] == msgSender, "Can only claim your own stake!");
 
         // store the user's balance
-        uint256 balance = _staked[msg.sender];
+        uint256 balance = _staked[msgSender];
 
-        // adjust the balance
-        _staked[msg.sender] = 0;
+        // delete the balance
+        delete _staked[msgSender];
+
+        // delete the starting timestamp
+        delete initiationStart[msgSender];
 
         // the initiate has graduated; delete them from initiate tracking
         delete allInitiates[_userIndex];
 
         // log data for this successful claim
-        emit Claim(msg.sender, balance);
+        emit Claim(msgSender, balance);
 
         // return the new member's original stake
-        return _token.transferFrom(address(this), msg.sender, balance);
+        return _token.transferFrom(address(this), msgSender, balance);
 
     }
 
@@ -317,9 +363,6 @@ contract RiteOfMoloch is ERC721, AccessControl {
             // enforce that the failed initiate and indices arrays are a match
             require(_failedInitiates[i] == allInitiates[_indices[i]], "You can't sacrifice the innocent!");
 
-            // change the sacrifice's balance
-            _staked[initiate] = 0;
-
             // calculate the total blood debt
             total += balance;
 
@@ -329,6 +372,11 @@ contract RiteOfMoloch is ERC721, AccessControl {
             // remove the sacrifice from the initiate array
             delete allInitiates[_indices[i]];
 
+            // remove the sacrifice's balance
+            delete _staked[initiate];
+
+            // remove the sacrifice's starting time
+            delete initiationStart[initiate];
         }
 
         // drain the life force from the sacrifice
@@ -351,8 +399,8 @@ contract RiteOfMoloch is ERC721, AccessControl {
         uint256 shares = member.shares;
 
         // enforce that the user is a member
-        require(shares >= _minimumShare, "You must be a member!");
-    }
+        require(shares >= minimumShare, "You must be a member!");
+        }
 
     /*************************
      VIEW AND PURE FUNCTIONS
