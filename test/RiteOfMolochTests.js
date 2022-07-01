@@ -4,7 +4,7 @@
 // Hardhat tests are normally written with Mocha and Chai.
 
 // We import Chai to use its asserting functions here.
-const { expect } = require("chai");
+const { expect, assert } = require("chai");
 const { keccak256, defaultAbiCoder } = require("ethers/lib/utils");
 const { ethers } = require("hardhat");
 require("dotenv").config();
@@ -135,13 +135,32 @@ describe("Rite of Moloch Contract", function () {
 
   describe("Admin and Operator only functions", function () {
 
+    it("should be able to assign OPERATOR role", async function () {
+
+      //get 32 byte keccak of OPERATOR string
+      const operator = ethers.utils.id("OPERATOR");
+      //assign OPERATOR to addr1
+      await riteOfMoloch.grantRole(operator, addr1.address);
+      //check if addr1 is an operator
+     expect(await riteOfMoloch.hasRole(operator, addr1.address)).to.be.true;
+    });
+
+    it("should have ADMIN as role admin for OPERATOR", async function () {
+
+       //get 32 byte keccak of OPERATOR string and ADMIN string
+       const operator = ethers.utils.id("OPERATOR");
+       const admin = ethers.utils.id("ADMIN");
+       //check to make sure ADMIN is admin of operator role.
+      expect(await riteOfMoloch.getRoleAdmin(operator)).to.equal(admin);
+    });
+
     it("should Not be able to change minimum stake", async function () {
 
       //check if non admin can call admin function
       await expect(
-        riteOfMoloch.connect(addr1).setMinimumStake(11)
+        riteOfMoloch.connect(addr2).setMinimumStake(11)
       ).to.be.revertedWith(
-        "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42"
+        "AccessControl: account 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc is missing role 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42"
       );
     });
 
@@ -156,7 +175,7 @@ describe("Rite of Moloch Contract", function () {
     });
 
     it("should be able to change the max time", async function () {
-
+      
       const newMaxTime = 1000000000;
       // set new max duration with owner acct
       await riteOfMoloch.setMaxDuration(newMaxTime);
@@ -175,9 +194,13 @@ describe("Rite of Moloch Contract", function () {
         "AccessControl: account 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc is missing role 0x523a704056dcd17bcf83bed8b68c59416dac1119be77755efe3bde0a64e46e0c"
       );
     });
+
+  
   });
+   
 
   describe("Initiate Rites", function () {
+
     it("should join the initiation", async function () {
       
       //get initial raid balance of contract
