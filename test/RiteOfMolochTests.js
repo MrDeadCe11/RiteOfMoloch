@@ -135,7 +135,7 @@ describe("Rite of Moloch Contract", function () {
 
   describe("Admin and Operator only functions", function () {
 
-    it("should be able to assign OPERATOR role", async function () {
+    it("should be able to assign OPERATOR role to addr1", async function () {
 
       //get 32 byte keccak of OPERATOR string
       const operator = ethers.utils.id("OPERATOR");
@@ -154,13 +154,13 @@ describe("Rite of Moloch Contract", function () {
       expect(await riteOfMoloch.getRoleAdmin(operator)).to.equal(admin);
     });
 
-    it("should Not be able to change minimum stake", async function () {
+    it("should NOT be able to change minimum stake from addr1", async function () {
 
       //check if non admin can call admin function
       await expect(
-        riteOfMoloch.connect(addr2).setMinimumStake(11)
+        riteOfMoloch.connect(addr1).setMinimumStake(11)
       ).to.be.revertedWith(
-        "AccessControl: account 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc is missing role 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42"
+        "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42"
       );
     });
 
@@ -175,7 +175,7 @@ describe("Rite of Moloch Contract", function () {
     });
 
     it("should be able to change the max time", async function () {
-      
+
       const newMaxTime = 1000000000;
       // set new max duration with owner acct
       await riteOfMoloch.setMaxDuration(newMaxTime);
