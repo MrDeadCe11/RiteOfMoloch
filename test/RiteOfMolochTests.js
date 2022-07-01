@@ -195,6 +195,10 @@ describe("Rite of Moloch Contract", function () {
       );
     });
 
+    // it("should be able to set a new share threshold", async function () {
+  
+    // });
+
   
   });
    
@@ -230,6 +234,8 @@ describe("Rite of Moloch Contract", function () {
       expect(event[0].args.newInitiate.toLowerCase()).to.equal(member);
       //check that correct amount of raid was transferred.
       expect(endingBalance.sub(initialBalance)).to.equal(minStake);
+      //check if soulbound nft is issued to the initiate
+
     });
 
     it("should NOT be able to re-join the initiation", async function () {

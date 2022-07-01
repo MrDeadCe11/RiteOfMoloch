@@ -200,7 +200,7 @@ contract RiteOfMoloch is ERC721, AccessControl {
     */
     function setShareThreshold(uint256 newShareThreshold) public onlyRole(ADMIN) {
 
-        // set the maximum length of time for initiations
+        // set the minimum amount of shares required to be considered a member.
         _minimumShare = newShareThreshold;
 
     }
