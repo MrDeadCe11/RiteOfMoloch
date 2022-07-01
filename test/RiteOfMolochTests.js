@@ -58,7 +58,7 @@ describe("Rite of Moloch Contract", function () {
   ];
   /** UTILITY FUNCTIONS */
   //function to impersonate an account and send an amount to a specified wallet amount needs to be a string denoted in wei.
-  async function impersonateAndTransfer(
+  async function impersonateAndTransferRaid(
     fromWalletAddress,
     toWalletAddress,
     amount
@@ -108,7 +108,7 @@ describe("Rite of Moloch Contract", function () {
      //get amount of raid to be transferred to fund member wallet for initiations.
      const raidAmount = ethers.utils.parseEther("100000");
      //impersonate whale and send some raid to specified address.
-     impersonateAndTransfer(whaleWallet, owner.address, raidAmount);
+     impersonateAndTransferRaid(whaleWallet, owner.address, raidAmount);
   });
 
   // You can nest describe calls to create subsections.
