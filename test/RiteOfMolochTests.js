@@ -164,7 +164,7 @@ describe("Rite of Moloch Contract", function () {
       );
     });
 
-    it("should be able to change minimum stake", async function () {
+    it("should be able to change minimum stake from owner", async function () {
 
       //change min stake with admin account
       await riteOfMoloch.connect(owner).setMinimumStake(11);
@@ -178,7 +178,7 @@ describe("Rite of Moloch Contract", function () {
 
       const newMaxTime = 1000000000;
       // set new max duration with owner acct
-      await riteOfMoloch.setMaxDuration(newMaxTime);
+      await riteOfMoloch.connect(addr1).setMaxDuration(newMaxTime);
       //check max time
       const maxDuration = await riteOfMoloch.maximumTime();
       //check to make sure max time has been changed
